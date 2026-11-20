@@ -7,38 +7,59 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Bilah Kontrol Admin (Tetap aktif selama sesi login belum di-logout) -->
-  <div id="admin-toolbar" class="admin-toolbar hidden">
+  <!-- Ornamen Cahaya Latar Belakang untuk Efek Soft Glass -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Toast Notification (Pengganti alert() untuk microinteraction halus) -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Bilah Kontrol Admin -->
+  <div id="admin-toolbar" class="admin-toolbar glass-panel hidden">
     <div class="admin-info">
-      <span>☕ <strong>Mode Edit Aktif</strong> (Klik teks apa saja untuk mengubah)</span>
-      <label class="bg-picker-label" title="Ubah Warna Latar Belakang">
-        Warna BG: <input type="color" id="bg-color-picker" value="#1c1512" />
+      <span class="pulse-dot"></span>
+      <span><strong>Mode Edit Aktif</strong> — Klik teks, foto profil, atau banner untuk mengubah</span>
+      <label class="bg-picker-label" title="Ubah Warna Dasar Latar Belakang">
+        Tint BG: <input type="color" id="bg-color-picker" value="#1e1b2e" />
       </label>
     </div>
     <div class="admin-actions">
-      <button id="btn-save-all" class="btn-small primary">💾 Simpan Semua</button>
-      <button id="btn-logout" class="btn-small danger">Logout</button>
+      <button id="btn-save-all" class="btn-small primary ripple-btn">💾 Simpan Semua</button>
+      <button id="btn-logout" class="btn-small danger ripple-btn">Logout</button>
     </div>
   </div>
 
   <div class="app-layout">
     <!-- BAGIAN 4: SIDEBAR NAVIGASI & UPLOAD TUGAS -->
-    <aside class="sidebar">
+    <aside class="sidebar glass-panel">
       <div class="sidebar-header">
         <a href="#bagian-profil" class="logo editable" data-field="logo">Theo.</a>
-        <button id="btn-auth-modal" class="btn-nav">Admin</button>
+        <button id="btn-auth-modal" class="btn-nav ripple-btn">Admin</button>
       </div>
 
       <nav class="sidebar-menu">
-        <a href="#bagian-profil" class="nav-item">1. Profil &amp; Banner</a>
-        <a href="#bagian-datadiri" class="nav-item">2. Data Diri</a>
-        <a href="#bagian-skill" class="nav-item">3. Skill</a>
-        <a href="#bagian-tugas" class="nav-item">4. Daftar Tugas</a>
-        <a href="#bagian-kontak" class="nav-item">5. Kontak &amp; Sosmed</a>
+        <a href="#bagian-profil" class="nav-item active" data-target="bagian-profil">
+          <span class="nav-indicator"></span>1. Profil &amp; Banner
+        </a>
+        <a href="#bagian-datadiri" class="nav-item" data-target="bagian-datadiri">
+          <span class="nav-indicator"></span>2. Data Diri
+        </a>
+        <a href="#bagian-skill" class="nav-item" data-target="bagian-skill">
+          <span class="nav-indicator"></span>3. Skill
+        </a>
+        <a href="#bagian-tugas" class="nav-item" data-target="bagian-tugas">
+          <span class="nav-indicator"></span>4. Daftar Tugas
+        </a>
+        <a href="#bagian-kontak" class="nav-item" data-target="bagian-kontak">
+          <span class="nav-indicator"></span>5. Kontak &amp; Sosmed
+        </a>
       </nav>
 
-      <!-- Kotak Upload Tugas di Sidebar (Hanya tampil saat Admin login) -->
-      <div id="sidebar-upload-box" class="sidebar-upload hidden">
+      <!-- Kotak Upload Tugas di Sidebar (Khusus Admin) -->
+      <div id="sidebar-upload-box" class="sidebar-upload glass-card hidden">
         <h4 class="editable" data-field="sidebarUploadTitle">Upload Tugas Baru</h4>
         <input type="text" id="task-title-input" placeholder="Judul Tugas..." />
         <textarea id="task-desc-input" rows="2" placeholder="Deskripsi singkat tugas..."></textarea>
@@ -47,32 +68,34 @@
           <input type="file" id="task-file-input" />
         </label>
         <span id="task-file-name" class="file-name-hint">Belum ada file dipilih (Maks 1MB)</span>
-        <button id="btn-upload-task" class="btn full-width">+ Tambah Tugas</button>
+        <button id="btn-upload-task" class="btn full-width ripple-btn">+ Tambah Tugas</button>
       </div>
     </aside>
 
     <!-- KONTEN UTAMA -->
     <main class="main-content">
       <!-- BAGIAN 1: FOTO PROFIL & BANNER -->
-      <section id="bagian-profil" class="profile-section">
+      <section id="bagian-profil" class="profile-section reveal-section">
         <div class="banner-wrapper" id="banner-container">
-          <img id="banner-img" src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1200&q=80" alt="Banner Portofolio" />
-          <label id="btn-edit-banner" class="edit-media-btn banner-btn hidden">
+          <img id="banner-img" src="https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80" alt="Banner Portofolio" />
+          <div class="banner-overlay-gradient"></div>
+          <label id="btn-edit-banner" class="edit-media-btn banner-btn glass-pill hidden">
             📷 Ganti Banner (Maks 1MB)
             <input type="file" id="input-banner-file" accept="image/*" hidden />
           </label>
         </div>
 
         <div class="profile-header container">
-          <div class="avatar-wrapper">
+          <!-- Klik langsung pada foto profil saat mode admin aktif untuk mengganti foto -->
+          <div id="avatar-container" class="avatar-wrapper" title="Foto Profil">
             <img id="avatar-img" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80" alt="Foto Profil" />
-            <label id="btn-edit-avatar" class="edit-media-btn avatar-btn hidden" title="Ganti Foto Profil (Maks 1MB)">
-              📷
-              <input type="file" id="input-avatar-file" accept="image/*" hidden />
-            </label>
+            <div id="avatar-hover-overlay" class="avatar-hover-overlay hidden">
+              <span>📷 Ganti Foto</span>
+            </div>
+            <input type="file" id="input-avatar-file" accept="image/*" hidden />
           </div>
 
-          <div class="profile-intro">
+          <div class="profile-intro glass-card">
             <h1 class="editable" data-field="profileName">Theo</h1>
             <p class="subtitle editable" data-field="profileRole">Web Developer &amp; UI/UX Enthusiast</p>
             <p class="bio editable" data-field="profileBio">Selamat datang di portofolio saya. Klik tombol Admin di sidebar untuk mengubah foto profil, banner, dan seluruh teks di halaman ini.</p>
@@ -81,30 +104,30 @@
       </section>
 
       <!-- BAGIAN 2: DATA DIRI -->
-      <section id="bagian-datadiri" class="container section">
+      <section id="bagian-datadiri" class="container section reveal-section">
         <h2 class="editable" data-field="headingDataDiri">Data Diri</h2>
         <div class="biodata-grid">
-          <div class="biodata-item">
+          <div class="biodata-item glass-card interactive-card">
             <span class="label editable" data-field="lblNama">Nama Lengkap</span>
             <p class="value editable" data-field="valNama">Theo Pratama</p>
           </div>
-          <div class="biodata-item">
+          <div class="biodata-item glass-card interactive-card">
             <span class="label editable" data-field="lblTtl">Tempat, Tanggal Lahir</span>
             <p class="value editable" data-field="valTtl">Jakarta, 12 Mei 2005</p>
           </div>
-          <div class="biodata-item">
+          <div class="biodata-item glass-card interactive-card">
             <span class="label editable" data-field="lblAlamat">Alamat</span>
             <p class="value editable" data-field="valAlamat">Indonesia</p>
           </div>
-          <div class="biodata-item">
+          <div class="biodata-item glass-card interactive-card">
             <span class="label editable" data-field="lblPendidikan">Pendidikan / Status</span>
             <p class="value editable" data-field="valPendidikan">Pelajar / Mahasiswa</p>
           </div>
-          <div class="biodata-item">
+          <div class="biodata-item glass-card interactive-card">
             <span class="label editable" data-field="lblEmail">Email</span>
             <p class="value editable" data-field="valEmail">theo@example.com</p>
           </div>
-          <div class="biodata-item">
+          <div class="biodata-item glass-card interactive-card">
             <span class="label editable" data-field="lblHobi">Hobi &amp; Minat</span>
             <p class="value editable" data-field="valHobi">Coding, Desain Web, Kopi</p>
           </div>
@@ -112,10 +135,10 @@
       </section>
 
       <!-- BAGIAN 3: SKILL -->
-      <section id="bagian-skill" class="container section">
+      <section id="bagian-skill" class="container section reveal-section">
         <div class="section-header-row">
           <h2 class="editable" data-field="headingSkill">Keahlian (Skill)</h2>
-          <button id="btn-add-skill" class="btn-small hidden">+ Tambah Skill</button>
+          <button id="btn-add-skill" class="btn-small ripple-btn hidden">+ Tambah Skill</button>
         </div>
         <div id="skill-list" class="skill-grid">
           <!-- Daftar skill dimuat dari Firestore -->
@@ -123,7 +146,7 @@
       </section>
 
       <!-- BAGIAN 4B: TAMPILAN TUGAS YANG DIUPLOAD -->
-      <section id="bagian-tugas" class="container section">
+      <section id="bagian-tugas" class="container section reveal-section">
         <h2 class="editable" data-field="headingTugas">Koleksi Tugas &amp; Karya</h2>
         <p class="section-desc editable" data-field="descTugas">Kumpulan file tugas dan proyek yang diunggah melalui panel sidebar.</p>
         <div id="task-grid" class="grid">
@@ -132,27 +155,27 @@
       </section>
 
       <!-- BAGIAN 5: NOMOR WA, YOUTUBE & TIKTOK -->
-      <section id="bagian-kontak" class="container section">
+      <section id="bagian-kontak" class="container section reveal-section">
         <h2 class="editable" data-field="headingKontak">Kontak &amp; Media Sosial</h2>
         <p class="section-desc editable" data-field="descKontak">Hubungi saya langsung melalui WhatsApp atau ikuti kanal media sosial saya:</p>
 
         <div class="social-cards">
-          <a id="link-wa" href="https://wa.me/6281234567890" target="_blank" class="social-card wa">
+          <a id="link-wa" href="https://wa.me/6281234567890" target="_blank" class="social-card glass-card interactive-card">
             <strong>WhatsApp</strong>
             <span id="display-wa">+62 812-3456-7890</span>
           </a>
-          <a id="link-yt" href="https://youtube.com/@username" target="_blank" class="social-card yt">
+          <a id="link-yt" href="https://youtube.com/@username" target="_blank" class="social-card glass-card interactive-card">
             <strong>YouTube</strong>
             <span id="display-yt">@username</span>
           </a>
-          <a id="link-tt" href="https://tiktok.com/@username" target="_blank" class="social-card tt">
+          <a id="link-tt" href="https://tiktok.com/@username" target="_blank" class="social-card glass-card interactive-card">
             <strong>TikTok</strong>
             <span id="display-tt">@username</span>
           </a>
         </div>
 
         <!-- Form Edit Nomor WA, YouTube & TikTok (Khusus Admin) -->
-        <div id="social-edit-box" class="edit-box hidden">
+        <div id="social-edit-box" class="edit-box glass-card hidden">
           <h4>Edit Kontak &amp; Sosial Media:</h4>
           <label>Nomor WhatsApp (awalan 62, contoh: 6281234567890)</label>
           <input type="text" id="input-wa" placeholder="6281234567890" />
@@ -171,7 +194,7 @@
 
   <!-- Modal Login Admin -->
   <div id="login-modal" class="modal hidden">
-    <div class="modal-content">
+    <div class="modal-content glass-panel">
       <h3>Login Admin</h3>
       <p class="modal-sub">Sesi login akan tetap aktif sampai Anda menekan Logout.</p>
       <form id="login-form">
@@ -179,8 +202,8 @@
         <input type="password" id="login-password" placeholder="Password" required />
         <p id="login-error" class="error-text"></p>
         <div class="modal-buttons">
-          <button type="button" id="btn-close-modal" class="btn-outline">Batal</button>
-          <button type="submit" class="btn">Masuk</button>
+          <button type="button" id="btn-close-modal" class="btn-outline ripple-btn">Batal</button>
+          <button type="submit" class="btn ripple-btn">Masuk</button>
         </div>
       </form>
     </div>

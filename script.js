@@ -22,7 +22,6 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Konfigurasi Firebase Anda
 const firebaseConfig = {
   apiKey: "AIzaSyAjYob8hBpCt_rq38FSwwJFQFst80tLCps",
   authDomain: "theoportofolio-5c09e.firebaseapp.com",
@@ -38,20 +37,19 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Sesi login tetap bertahan meski browser di-refresh/ditutup sampai Logout ditekan
+// Sesi login tetap aktif sampai Logout ditekan
 setPersistence(auth, browserLocalPersistence);
 
-// Dokumen terpisah di Firestore agar masing-masing punya kapasitas penuh
 const mainDocRef = doc(db, "portofolio", "mainProfile");
 const bannerDocRef = doc(db, "portofolio", "bannerMedia");
 const avatarDocRef = doc(db, "portofolio", "avatarMedia");
 const tasksColRef = collection(db, "portofolio_tasks");
 
-const MAX_FILE_SIZE = 1024 * 1024; // 1 MB (1.048.576 bytes)
+const MAX_FILE_SIZE = 1024 * 1024; // 1 MB
 
 let portfolioData = {
-  bgColor: "#1c1512",
-  bannerUrl: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1200&q=80",
+  bgColor: "#1e1b2e",
+  bannerUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80",
   avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
   texts: {
     logo: "Theo.",
@@ -100,19 +98,70 @@ const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const sidebarUploadBox = document.getElementById("sidebar-upload-box");
 const socialEditBox = document.getElementById("social-edit-box");
+const avatarContainer = document.getElementById("avatar-container");
+const avatarHoverOverlay = document.getElementById("avatar-hover-overlay");
+const inputAvatarFile = document.getElementById("input-avatar-file");
 
-// Fungsi validasi & konversi file <= 1MB ke Base64 Data URL
+// Microinteraction: Toast Notification halus
+function showToast(message, isError = false) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = `toast ${isError ? "error" : ""}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    toast.style.transition = "all 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Microinteraction: Efek Ripple saat tombol diklik
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".ripple-btn");
+  if (!btn) return;
+  const circle = document.createElement("span");
+  const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+  const rect = btn.getBoundingClientRect();
+  circle.style.width = circle.style.height = `${diameter}px`;
+  circle.style.left = `${e.clientX - rect.left - diameter / 2}px`;
+  circle.style.top = `${e.clientY - rect.top - diameter / 2}px`;
+  circle.classList.add("ripple-circle");
+  btn.appendChild(circle);
+  setTimeout(() => circle.remove(), 550);
+});
+
+// Microinteraction: Scroll Reveal & Active Sidebar Indicator
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        const id = entry.target.getAttribute("id");
+        document.querySelectorAll(".nav-item").forEach((link) => {
+          link.classList.toggle("active", link.dataset.target === id);
+        });
+      }
+    });
+  },
+  { threshold: 0.2 }
+);
+
+document.querySelectorAll(".reveal-section").forEach((sec) => revealObserver.observe(sec));
+
+// Validasi & Konversi file <= 1MB ke Base64
 function fileToBase64(file, maxWidth = 1280) {
   return new Promise((resolve, reject) => {
     if (file.size > MAX_FILE_SIZE) {
-      reject(new Error("Ukuran file melebihi 1 MB! Pilih file dengan ukuran maksimal 1 MB."));
+      reject(new Error("Ukuran file melebihi 1 MB! Pilih file maksimal 1 MB."));
       return;
     }
 
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Gagal membaca file."));
 
-    // Jika file adalah gambar, kompres ringan agar aman masuk batas dokumen Firestore
     if (file.type.startsWith("image/")) {
       reader.onload = (event) => {
         const img = new Image();
@@ -131,7 +180,6 @@ function fileToBase64(file, maxWidth = 1280) {
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Format JPEG/WebP dengan kualitas 0.8 agar ukuran Base64 di bawah 900KB
           const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
           const dataUrl = canvas.toDataURL(outputType, 0.82);
 
@@ -146,11 +194,10 @@ function fileToBase64(file, maxWidth = 1280) {
       };
       reader.readAsDataURL(file);
     } else {
-      // Untuk file non-gambar (PDF, DOCX, ZIP, dll.)
       reader.onload = (event) => {
         const result = event.target.result;
         if (result.length > 1000000) {
-          reject(new Error("File terlalu besar setelah encoding. Gunakan file di bawah 700 KB atau format gambar."));
+          reject(new Error("File terlalu besar setelah encoding. Gunakan file di bawah 700 KB."));
         } else {
           resolve(result);
         }
@@ -160,7 +207,7 @@ function fileToBase64(file, maxWidth = 1280) {
   });
 }
 
-// 1. Muat Semua Data dari Firestore
+// Muat Semua Data dari Firestore
 async function loadAllData() {
   try {
     const [mainSnap, bannerSnap, avatarSnap, tasksSnap] = await Promise.all([
@@ -198,7 +245,7 @@ async function loadAllData() {
   renderAll();
 }
 
-// 2. Render Tampilan
+// Render Tampilan
 function renderAll() {
   document.documentElement.style.setProperty("--bg", portfolioData.bgColor);
   bgColorPicker.value = portfolioData.bgColor;
@@ -242,7 +289,7 @@ function renderAll() {
   taskList.forEach((task) => {
     const isImage = task.fileData && task.fileData.startsWith("data:image/");
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "card glass-card interactive-card";
     card.dataset.id = task.id;
     card.innerHTML = `
       ${isAdmin ? `<button class="btn-delete-card" data-id="${task.id}">Hapus</button>` : ""}
@@ -263,8 +310,9 @@ function renderAll() {
           await deleteDoc(doc(db, "portofolio_tasks", id));
           taskList = taskList.filter((t) => t.id !== id);
           renderAll();
+          showToast("Tugas berhasil dihapus.");
         } catch (err) {
-          alert("Gagal menghapus tugas: " + err.message);
+          showToast("Gagal menghapus tugas: " + err.message, true);
         }
       });
     });
@@ -286,15 +334,15 @@ function renderAll() {
   document.getElementById("input-tt").value = portfolioData.socials.tt;
 }
 
-// 3. Pantau Status Login Admin
+// Pantau Status Login Admin
 onAuthStateChanged(auth, (user) => {
   isAdmin = !!user;
   const adminElements = [
     adminToolbar,
     sidebarUploadBox,
     socialEditBox,
+    avatarHoverOverlay,
     document.getElementById("btn-edit-banner"),
-    document.getElementById("btn-edit-avatar"),
     document.getElementById("btn-add-skill")
   ];
 
@@ -303,10 +351,60 @@ onAuthStateChanged(auth, (user) => {
     else el.classList.add("hidden");
   });
 
+  if (isAdmin) {
+    avatarContainer.classList.add("admin-clickable");
+    avatarContainer.title = "Klik untuk mengganti foto profil (Maks 1MB)";
+  } else {
+    avatarContainer.classList.remove("admin-clickable");
+    avatarContainer.title = "Foto Profil";
+  }
+
   btnAuthModal.textContent = isAdmin ? "Admin ✓" : "Admin";
   renderAll();
 });
 
+// Klik langsung area foto profil saat mode Admin aktif untuk membuka pemilih gambar
+avatarContainer.addEventListener("click", () => {
+  if (isAdmin) {
+    inputAvatarFile.click();
+  }
+});
+
+// Upload Foto Profil (Maks 1MB)
+inputAvatarFile.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file || !isAdmin) return;
+  try {
+    showToast("Memproses foto profil...");
+    const base64 = await fileToBase64(file, 500);
+    await setDoc(avatarDocRef, { url: base64 });
+    portfolioData.avatarUrl = base64;
+    document.getElementById("avatar-img").src = base64;
+    showToast("Foto profil berhasil diganti!");
+  } catch (err) {
+    showToast(err.message, true);
+  }
+  e.target.value = "";
+});
+
+// Upload Banner (Maks 1MB)
+document.getElementById("input-banner-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file || !isAdmin) return;
+  try {
+    showToast("Memproses banner...");
+    const base64 = await fileToBase64(file, 1280);
+    await setDoc(bannerDocRef, { url: base64 });
+    portfolioData.bannerUrl = base64;
+    document.getElementById("banner-img").src = base64;
+    showToast("Banner berhasil diperbarui!");
+  } catch (err) {
+    showToast(err.message, true);
+  }
+  e.target.value = "";
+});
+
+// Modal Login & Auth
 btnAuthModal.addEventListener("click", () => {
   if (!isAdmin) {
     loginError.textContent = "";
@@ -326,6 +424,7 @@ loginForm.addEventListener("submit", async (e) => {
     );
     loginModal.classList.add("hidden");
     loginForm.reset();
+    showToast("Login berhasil! Mode Edit aktif.");
   } catch (err) {
     loginError.textContent = "Email atau password salah!";
   }
@@ -333,6 +432,7 @@ loginForm.addEventListener("submit", async (e) => {
 
 document.getElementById("btn-logout").addEventListener("click", async () => {
   await signOut(auth);
+  showToast("Berhasil keluar dari akun Admin.");
 });
 
 bgColorPicker.addEventListener("input", (e) => {
@@ -340,45 +440,14 @@ bgColorPicker.addEventListener("input", (e) => {
   document.documentElement.style.setProperty("--bg", e.target.value);
 });
 
-// Upload Banner (Maks 1MB) -> Langsung simpan ke Firestore dokumen terpisah
-document.getElementById("input-banner-file").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file || !isAdmin) return;
-  try {
-    const base64 = await fileToBase64(file, 1280);
-    await setDoc(bannerDocRef, { url: base64 });
-    portfolioData.bannerUrl = base64;
-    document.getElementById("banner-img").src = base64;
-    alert("Banner berhasil diperbarui dan disimpan!");
-  } catch (err) {
-    alert(err.message);
-  }
-  e.target.value = "";
-});
-
-// Upload Foto Profil (Maks 1MB) -> Langsung simpan ke Firestore dokumen terpisah
-document.getElementById("input-avatar-file").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file || !isAdmin) return;
-  try {
-    const base64 = await fileToBase64(file, 500);
-    await setDoc(avatarDocRef, { url: base64 });
-    portfolioData.avatarUrl = base64;
-    document.getElementById("avatar-img").src = base64;
-    alert("Foto profil berhasil diperbarui dan disimpan!");
-  } catch (err) {
-    alert(err.message);
-  }
-  e.target.value = "";
-});
-
 // Tambah Skill
 document.getElementById("btn-add-skill").addEventListener("click", () => {
   portfolioData.skills.push("Skill Baru");
   renderAll();
+  showToast("Skill ditambahkan. Klik teksnya untuk mengedit.");
 });
 
-// Upload Tugas dari Sidebar (Maks 1MB per file)
+// Upload Tugas dari Sidebar (Maks 1MB)
 const taskFileInput = document.getElementById("task-file-input");
 taskFileInput.addEventListener("change", () => {
   const file = taskFileInput.files[0];
@@ -387,7 +456,7 @@ taskFileInput.addEventListener("change", () => {
     return;
   }
   if (file.size > MAX_FILE_SIZE) {
-    alert("Ukuran file melebihi 1 MB! Silakan pilih file maksimal 1 MB.");
+    showToast("Ukuran file melebihi 1 MB!", true);
     taskFileInput.value = "";
     document.getElementById("task-file-name").textContent = "File ditolak (> 1MB)";
     return;
@@ -402,7 +471,7 @@ document.getElementById("btn-upload-task").addEventListener("click", async () =>
   const file = taskFileInput.files[0];
 
   if (!title) {
-    alert("Masukkan judul tugas terlebih dahulu.");
+    showToast("Masukkan judul tugas terlebih dahulu.", true);
     return;
   }
 
@@ -432,9 +501,9 @@ document.getElementById("btn-upload-task").addEventListener("click", async () =>
     document.getElementById("task-file-name").textContent = "Belum ada file dipilih (Maks 1MB)";
 
     renderAll();
-    alert("Tugas berhasil diunggah dan tersimpan!");
+    showToast("Tugas berhasil diunggah!");
   } catch (err) {
-    alert("Gagal mengunggah tugas: " + err.message);
+    showToast("Gagal mengunggah tugas: " + err.message, true);
   }
 });
 
@@ -456,7 +525,6 @@ document.getElementById("btn-save-all").addEventListener("click", async () => {
   portfolioData.socials.yt = document.getElementById("input-yt").value.trim();
   portfolioData.socials.tt = document.getElementById("input-tt").value.trim();
 
-  // Simpan perubahan teks jika ada judul/deskripsi kartu tugas yang diedit langsung
   const taskCards = document.querySelectorAll("#task-grid .card");
   for (const card of taskCards) {
     const id = card.dataset.id;
@@ -471,13 +539,12 @@ document.getElementById("btn-save-all").addEventListener("click", async () => {
   }
 
   try {
-    // Simpan profil utama tanpa menyertakan gambar besar agar tetap ringan
     const { bannerUrl, avatarUrl, ...profileOnlyData } = portfolioData;
     await setDoc(mainDocRef, profileOnlyData);
-    alert("Semua perubahan teks dan pengaturan berhasil disimpan!");
+    showToast("Semua perubahan berhasil disimpan!");
     renderAll();
   } catch (err) {
-    alert("Gagal menyimpan: " + err.message);
+    showToast("Gagal menyimpan: " + err.message, true);
   }
 });
 
