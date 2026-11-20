@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portofolio | Nama Anda</title>
+  <title>Portofolio | Theo</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
     <nav class="container">
-      <a href="#" class="logo editable" data-field="logo">NamaAnda.</a>
+      <a href="#" class="logo editable" data-field="logo">Theo.</a>
       <ul class="nav-links">
         <li><a href="#tentang">Tentang</a></li>
         <li><a href="#proyek">Proyek</a></li>
@@ -19,9 +19,9 @@
     </nav>
   </header>
 
-  <!-- Panel Kontrol Khusus Admin (Muncul setelah login) -->
+  <!-- Panel Kontrol Khusus Admin (Muncul setelah login berhasil) -->
   <div id="admin-toolbar" class="admin-toolbar hidden">
-    <span>Mode Admin Aktif — Klik teks mana saja untuk mengedit</span>
+    <span>☕ Mode Edit Aktif — Klik teks mana saja untuk mengubah isi</span>
     <div class="admin-actions">
       <button id="btn-add-project" class="btn-small">+ Tambah Proyek</button>
       <button id="btn-save-all" class="btn-small primary">Simpan Perubahan</button>
@@ -30,14 +30,18 @@
   </div>
 
   <section class="hero container">
-    <h1>Halo, saya <span class="editable" data-field="heroName">Nama Anda</span></h1>
-    <p class="editable" data-field="heroDesc">Web Developer &amp; UI/UX Enthusiast yang fokus membangun aplikasi web modern, cepat, dan responsif.</p>
-    <a href="#proyek" class="btn">Lihat Proyek Saya</a>
+    <p class="hero-badge editable" data-field="heroBadge">Selamat datang di ruang karya saya</p>
+    <h1>Halo, saya <span class="editable" data-field="heroName">Theo</span></h1>
+    <p class="hero-desc editable" data-field="heroDesc">Web Developer &amp; UI/UX Enthusiast yang fokus membangun aplikasi web modern, cepat, dan fungsional.</p>
+    <div class="hero-cta">
+      <a href="#proyek" class="btn">Lihat Proyek Saya</a>
+      <a href="#kontak" class="btn-outline">Hubungi Saya</a>
+    </div>
   </section>
 
   <section id="tentang" class="container section">
     <h2>Tentang Saya</h2>
-    <p class="editable" data-field="aboutDesc">Saya adalah pengembang perangkat lunak dengan pengalaman di HTML, CSS, JavaScript, dan layanan cloud seperti Firebase. Saya senang memecahkan masalah melalui kode yang bersih dan efisien.</p>
+    <p class="editable" data-field="aboutDesc">Saya adalah pengembang web yang gemar menciptakan pengalaman digital yang bersih dan intuitif. Berpengalaman menggunakan HTML, CSS, JavaScript, serta ekosistem cloud seperti Firebase untuk membangun aplikasi real-time.</p>
   </section>
 
   <section id="proyek" class="container section">
@@ -49,30 +53,31 @@
 
   <section id="kontak" class="container section">
     <h2>Mari Terhubung</h2>
-    <p class="editable" data-field="contactDesc">Tertarik berkolaborasi atau memiliki pertanyaan? Hubungi saya melalui:</p>
+    <p class="editable" data-field="contactDesc">Tertarik berdiskusi tentang proyek atau kolaborasi? Mari berbincang sambil menikmati secangkir kopi:</p>
     <div class="contact-links">
-      <a id="link-email" href="mailto:emailanda@example.com" class="btn-outline">Email</a>
-      <a id="link-github" href="https://github.com/usernameanda" target="_blank" class="btn-outline">GitHub</a>
-      <a id="link-linkedin" href="https://linkedin.com/in/usernameanda" target="_blank" class="btn-outline">LinkedIn</a>
+      <a id="link-email" href="mailto:theo@example.com" class="btn-outline">Email</a>
+      <a id="link-github" href="https://github.com/" target="_blank" class="btn-outline">GitHub</a>
+      <a id="link-linkedin" href="https://linkedin.com/" target="_blank" class="btn-outline">LinkedIn</a>
     </div>
-    <!-- Form edit link kontak (Hanya muncul saat login) -->
+
+    <!-- Form edit link kontak (Hanya muncul saat Admin login) -->
     <div id="contact-edit-box" class="edit-box hidden">
       <h4>Edit Tautan Kontak:</h4>
-      <input type="email" id="input-email" placeholder="Email Anda" />
-      <input type="url" id="input-github" placeholder="URL GitHub" />
-      <input type="url" id="input-linkedin" placeholder="URL LinkedIn" />
+      <input type="email" id="input-email" placeholder="Alamat Email Anda" />
+      <input type="url" id="input-github" placeholder="URL Profil GitHub" />
+      <input type="url" id="input-linkedin" placeholder="URL Profil LinkedIn" />
     </div>
   </section>
 
   <footer>
-    <p>&copy; 2026 <span class="editable" data-field="footerName">Nama Anda</span>. Dibuat dengan VS Code &amp; Firebase.</p>
+    <p>&copy; 2026 <span class="editable" data-field="footerName">Theo</span>. Dibuat dengan VS Code &amp; Firebase.</p>
   </footer>
 
   <!-- Modal Login Admin -->
   <div id="login-modal" class="modal hidden">
     <div class="modal-content">
       <h3>Login Admin</h3>
-      <p class="modal-sub">Masukkan email &amp; password untuk mengedit portofolio.</p>
+      <p class="modal-sub">Masukkan email &amp; password admin untuk mengaktifkan mode edit.</p>
       <form id="login-form">
         <input type="email" id="login-email" placeholder="Email Admin" required />
         <input type="password" id="login-password" placeholder="Password" required />

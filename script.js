@@ -1,4 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -12,15 +13,7 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 1. TEMPEL KONFIGURASI FIREBASE ANDA DI SINI
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Konfigurasi Firebase Anda
 const firebaseConfig = {
   apiKey: "AIzaSyAjYob8hBpCt_rq38FSwwJFQFst80tLCps",
   authDomain: "theoportofolio-5c09e.firebaseapp.com",
@@ -31,21 +24,25 @@ const firebaseConfig = {
   measurementId: "G-E0G8YP1JGW"
 };
 
-// Initialize Firebase
+// Inisialisasi Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const contentDocRef = doc(db, "portofolio", "mainData");
 
-// Data default jika database masih kosong
+// Data awal sebelum disimpan pertama kali ke Firestore
 let portfolioData = {
-  logo: "NamaAnda.",
-  heroName: "Nama Anda",
-  heroDesc: "Web Developer & UI/UX Enthusiast yang fokus membangun aplikasi web modern, cepat, dan responsif.",
-  aboutDesc: "Saya adalah pengembang perangkat lunak dengan pengalaman di HTML, CSS, JavaScript, dan layanan cloud seperti Firebase.",
-  contactDesc: "Tertarik berkolaborasi atau memiliki pertanyaan? Hubungi saya melalui:",
-  footerName: "Nama Anda",
-  email: "emailanda@example.com",
-  github: "https://github.com/usernameanda",
-  linkedin: "https://linkedin.com/in/usernameanda",
+  logo: "Theo.",
+  heroBadge: "Selamat datang di ruang karya saya",
+  heroName: "Theo",
+  heroDesc: "Web Developer & UI/UX Enthusiast yang fokus membangun aplikasi web modern, cepat, dan fungsional.",
+  aboutDesc: "Saya adalah pengembang web yang gemar menciptakan pengalaman digital yang bersih dan intuitif. Berpengalaman menggunakan HTML, CSS, JavaScript, serta ekosistem cloud seperti Firebase untuk membangun aplikasi real-time.",
+  contactDesc: "Tertarik berdiskusi tentang proyek atau kolaborasi? Mari berbincang sambil menikmati secangkir kopi:",
+  footerName: "Theo",
+  email: "theo@example.com",
+  github: "https://github.com/",
+  linkedin: "https://linkedin.com/",
   projects: [
     {
       title: "Aplikasi Manajemen Tugas",
@@ -53,8 +50,8 @@ let portfolioData = {
       tags: "HTML, CSS, Firebase"
     },
     {
-      title: "Website E-Commerce",
-      desc: "Antarmuka toko online responsif lengkap dengan fitur keranjang belanja dan filter kategori produk.",
+      title: "Website Katalog Kopi",
+      desc: "Antarmuka web responsif bertema hangat dengan filter kategori produk dan keranjang pesanan.",
       tags: "JavaScript, CSS Grid"
     }
   ]
@@ -72,7 +69,7 @@ const adminToolbar = document.getElementById("admin-toolbar");
 const contactEditBox = document.getElementById("contact-edit-box");
 const projectGrid = document.getElementById("project-grid");
 
-// 2. Muat data dari Firestore saat halaman dibuka
+// 1. Ambil data terbaru dari Firestore
 async function loadPortfolioData() {
   try {
     const snap = await getDoc(contentDocRef);
@@ -80,16 +77,16 @@ async function loadPortfolioData() {
       portfolioData = { ...portfolioData, ...snap.data() };
     }
   } catch (err) {
-    console.error("Gagal memuat data:", err);
+    console.error("Gagal memuat data dari Firestore:", err);
   }
   renderPage();
 }
 
-// 3. Tampilkan data ke halaman
+// 2. Render data ke tampilan HTML
 function renderPage() {
   document.querySelectorAll(".editable").forEach((el) => {
     const field = el.dataset.field;
-    if (portfolioData[field]) {
+    if (portfolioData[field] !== undefined) {
       el.textContent = portfolioData[field];
     }
     el.contentEditable = isAdmin ? "true" : "false";
@@ -109,6 +106,7 @@ function renderPage() {
   portfolioData.projects.forEach((proj, index) => {
     const tagsHtml = proj.tags
       .split(",")
+      .filter((t) => t.trim() !== "")
       .map((t) => `<span class="tag">${t.trim()}</span>`)
       .join("");
 
@@ -123,7 +121,6 @@ function renderPage() {
     projectGrid.appendChild(card);
   });
 
-  // Event tombol hapus kartu proyek
   if (isAdmin) {
     document.querySelectorAll(".btn-delete-card").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -135,7 +132,7 @@ function renderPage() {
   }
 }
 
-// 4. Pantau Status Login Admin
+// 3. Cek Status Login Admin
 onAuthStateChanged(auth, (user) => {
   isAdmin = !!user;
   if (isAdmin) {
@@ -162,7 +159,7 @@ btnCloseModal.addEventListener("click", () => {
   loginModal.classList.add("hidden");
 });
 
-// Proses Login Email & Password
+// Proses Login
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("login-email").value;
@@ -182,31 +179,28 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
   await signOut(auth);
 });
 
-// Tambah Proyek Baru
+// Tambah Kartu Proyek Baru
 document.getElementById("btn-add-project").addEventListener("click", () => {
   portfolioData.projects.push({
     title: "Judul Proyek Baru",
-    desc: "Klik teks ini untuk menulis deskripsi singkat proyek Anda.",
-    tags: "HTML, CSS, JS"
+    desc: "Klik teks ini untuk menulis deskripsi proyek Anda.",
+    tags: "HTML, CSS, Firebase"
   });
   renderPage();
 });
 
-// Simpan Semua Perubahan ke Firestore
+// Simpan Perubahan ke Firestore
 document.getElementById("btn-save-all").addEventListener("click", async () => {
   if (!isAdmin) return;
 
-  // Ambil teks terbaru dari elemen editable
   document.querySelectorAll(".editable").forEach((el) => {
     portfolioData[el.dataset.field] = el.textContent.trim();
   });
 
-  // Ambil tautan kontak terbaru
   portfolioData.email = document.getElementById("input-email").value.trim();
   portfolioData.github = document.getElementById("input-github").value.trim();
   portfolioData.linkedin = document.getElementById("input-linkedin").value.trim();
 
-  // Ambil data proyek terbaru dari kartu
   const updatedProjects = [];
   document.querySelectorAll("#project-grid .card").forEach((card) => {
     updatedProjects.push({
@@ -219,10 +213,10 @@ document.getElementById("btn-save-all").addEventListener("click", async () => {
 
   try {
     await setDoc(contentDocRef, portfolioData);
-    alert("Perubahan berhasil disimpan ke Firebase!");
+    alert("Perubahan berhasil disimpan!");
     renderPage();
   } catch (err) {
-    alert("Gagal menyimpan: " + err.message);
+    alert("Gagal menyimpan. Pastikan Firestore Rules & akun Admin sudah aktif: " + err.message);
   }
 });
 
