@@ -37,7 +37,7 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Sesi login tetap bertahan sampai tombol Logout ditekan
+// Sesi login tetap aktif sampai Logout ditekan
 setPersistence(auth, browserLocalPersistence);
 
 const mainDocRef = doc(db, "portofolio", "mainProfile");
@@ -57,7 +57,7 @@ let portfolioData = {
     sidebarUploadTitle: "Upload Tugas Baru",
     profileName: "Theo",
     profileRole: "Web Developer & UI/UX Enthusiast",
-    profileBio: "Selamat datang di portofolio saya. Klik tombol Admin di sidebar untuk mengubah foto profil, banner, dan seluruh teks di halaman ini.",
+    profileBio: "Selamat datang di portofolio saya. Klik tombol Admin di sidebar untuk masuk dan mengatur konten portofolio ini.",
     headingDataDiri: "Data Diri",
     lblNama: "Nama Lengkap",
     valNama: "Theo Pratama",
@@ -81,7 +81,7 @@ let portfolioData = {
     skillTitle4: "Git & GitHub",
     skillDesc4: "Mengatur manajemen versi kode sumber serta kolaborasi proyek secara terstruktur dan aman.",
     headingTugas: "Koleksi Tugas & Karya",
-    descTugas: "Kumpulan file tugas dan proyek yang diunggah melalui panel sidebar.",
+    descTugas: "Klik tombol \"Lihat Tugas\" pada kartu untuk menampilkan pratinjau video, PDF, Drive, atau gambar langsung di halaman ini.",
     headingKontak: "Kontak & Media Sosial",
     descKontak: "Hubungi saya langsung melalui WhatsApp atau ikuti kanal media sosial saya:",
     lblWa: "WhatsApp",
@@ -95,10 +95,17 @@ let portfolioData = {
 };
 
 let taskList = [];
-let isAdmin = false;
+let isLoggedIn = false; // Status apakah masuk akun Admin
+let isEditMode = false; // Status apakah Mode Edit sedang dinyalakan (bebas toggle)
 
 // Elemen DOM
 const adminToolbar = document.getElementById("admin-toolbar");
+const adminStatusDot = document.getElementById("admin-status-dot");
+const adminStatusText = document.getElementById("admin-status-text");
+const btnToggleEdit = document.getElementById("btn-toggle-edit");
+const editOnlyControls = document.getElementById("edit-only-controls");
+const btnSaveAll = document.getElementById("btn-save-all");
+
 const pageBgImage = document.getElementById("page-bg-image");
 const inputPageBg = document.getElementById("input-page-bg");
 const btnResetBg = document.getElementById("btn-reset-bg");
@@ -111,6 +118,14 @@ const sidebarUploadBox = document.getElementById("sidebar-upload-box");
 const avatarContainer = document.getElementById("avatar-container");
 const avatarHoverOverlay = document.getElementById("avatar-hover-overlay");
 const inputAvatarFile = document.getElementById("input-avatar-file");
+
+// Modal Pratinjau Tugas
+const previewModal = document.getElementById("preview-modal");
+const previewBadge = document.getElementById("preview-badge");
+const previewTitle = document.getElementById("preview-title");
+const previewDesc = document.getElementById("preview-desc");
+const previewBody = document.getElementById("preview-body");
+const previewExternalBtn = document.getElementById("preview-external-btn");
 
 // Toast Notification
 function showToast(message, isError = false) {
@@ -161,6 +176,143 @@ const revealObserver = new IntersectionObserver(
 
 document.querySelectorAll(".reveal-section").forEach((sec) => revealObserver.observe(sec));
 
+// Deteksi Platform & Buat URL Embed agar bisa dilihat langsung di dalam web
+function parseMediaEmbed(task) {
+  if (task.fileData) {
+    if (task.fileData.startsWith("data:image/")) {
+      return { platform: "GAMBAR", type: "image", src: task.fileData, externalUrl: task.fileData };
+    }
+    if (task.fileData.startsWith("data:application/pdf")) {
+      return { platform: "PDF", type: "iframe", src: task.fileData, externalUrl: task.fileData };
+    }
+    return { platform: "FILE", type: "download", src: task.fileData, externalUrl: task.fileData };
+  }
+
+  const url = (task.externalUrl || "").trim();
+  if (!url) return { platform: "CATATAN", type: "none", src: "", externalUrl: "" };
+
+  // 1. YouTube (watch?v=, youtu.be/, shorts/)
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) {
+    return {
+      platform: "YOUTUBE",
+      type: "iframe",
+      src: `https://www.youtube.com/embed/${ytMatch[1]}`,
+      externalUrl: url
+    };
+  }
+
+  // 2. TikTok (/video/ID)
+  const ttMatch = url.match(/tiktok\.com\/.*\/video\/(\d+)/);
+  if (ttMatch) {
+    return {
+      platform: "TIKTOK",
+      type: "iframe",
+      src: `https://www.tiktok.com/embed/v2/${ttMatch[1]}`,
+      externalUrl: url
+    };
+  }
+  if (url.includes("tiktok.com")) {
+    return { platform: "TIKTOK", type: "link", src: url, externalUrl: url };
+  }
+
+  // 3. Instagram (/p/CODE, /reel/CODE, /tv/CODE)
+  const igMatch = url.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/);
+  if (igMatch) {
+    return {
+      platform: "INSTAGRAM",
+      type: "iframe",
+      src: `https://www.instagram.com/p/${igMatch[1]}/embed`,
+      externalUrl: url
+    };
+  }
+  if (url.includes("instagram.com")) {
+    return { platform: "INSTAGRAM", type: "link", src: url, externalUrl: url };
+  }
+
+  // 4. Google Drive (/file/d/ID)
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) {
+    return {
+      platform: "GOOGLE DRIVE",
+      type: "iframe",
+      src: `https://drive.google.com/file/d/${driveMatch[1]}/preview`,
+      externalUrl: url
+    };
+  }
+  if (url.includes("drive.google.com") || url.includes("docs.google.com")) {
+    const previewUrl = url.replace(/\/edit.*$/, "/preview").replace(/\/view.*$/, "/preview");
+    return { platform: "GOOGLE DRIVE", type: "iframe", src: previewUrl, externalUrl: url };
+  }
+
+  // 5. PDF Online
+  if (url.toLowerCase().endsWith(".pdf")) {
+    return { platform: "PDF", type: "iframe", src: url, externalUrl: url };
+  }
+
+  // 6. Tautan Web Lainnya
+  return { platform: "TAUTAN", type: "iframe", src: url, externalUrl: url };
+}
+
+// Buka Pratinjau Tugas Langsung di Web
+function openTaskPreview(task) {
+  const media = parseMediaEmbed(task);
+  previewBadge.textContent = media.platform;
+  previewTitle.textContent = task.title;
+  previewDesc.textContent = task.desc;
+
+  if (media.externalUrl) {
+    previewExternalBtn.href = media.externalUrl;
+    previewExternalBtn.classList.remove("hidden");
+    if (task.fileData) {
+      previewExternalBtn.setAttribute("download", task.fileName || "tugas");
+      previewExternalBtn.textContent = "⬇️ Unduh File";
+    } else {
+      previewExternalBtn.removeAttribute("download");
+      previewExternalBtn.textContent = "Buka Tab Baru ↗";
+    }
+  } else {
+    previewExternalBtn.classList.add("hidden");
+  }
+
+  previewBody.innerHTML = "";
+  if (media.type === "image") {
+    previewBody.innerHTML = `<img src="${media.src}" alt="${task.title}" />`;
+  } else if (media.type === "iframe") {
+    previewBody.innerHTML = `<iframe src="${media.src}" allowfullscreen loading="lazy"></iframe>`;
+  } else if (media.type === "download") {
+    previewBody.innerHTML = `
+      <div class="preview-fallback-box">
+        <p>File <strong>${task.fileName}</strong> siap diunduh.</p>
+        <a href="${media.src}" download="${task.fileName}" class="btn">⬇️ Unduh Sekarang</a>
+      </div>
+    `;
+  } else if (media.type === "link") {
+    previewBody.innerHTML = `
+      <div class="preview-fallback-box">
+        <p>Tautan ${media.platform} singkat/profil tidak mengizinkan embed langsung. Klik tombol di bawah untuk membukanya:</p>
+        <a href="${media.externalUrl}" target="_blank" class="btn">Buka ${media.platform} ↗</a>
+      </div>
+    `;
+  } else {
+    previewBody.innerHTML = `<div class="preview-fallback-box"><p>Tugas ini hanya berisi deskripsi teks.</p></div>`;
+  }
+
+  previewModal.classList.remove("hidden");
+}
+
+document.getElementById("btn-close-preview").addEventListener("click", () => {
+  previewModal.classList.add("hidden");
+  previewBody.innerHTML = ""; // Hentikan pemutaran video saat modal ditutup
+});
+
+previewModal.addEventListener("click", (e) => {
+  if (e.target === previewModal) {
+    previewModal.classList.add("hidden");
+    previewBody.innerHTML = "";
+  }
+});
+
 // Validasi & Konversi file <= 1MB ke Base64
 function fileToBase64(file, maxWidth = 1280) {
   return new Promise((resolve, reject) => {
@@ -207,7 +359,7 @@ function fileToBase64(file, maxWidth = 1280) {
       reader.onload = (event) => {
         const result = event.target.result;
         if (result.length > 1000000) {
-          reject(new Error("File terlalu besar setelah encoding. Gunakan file di bawah 700 KB."));
+          reject(new Error("File terlalu besar setelah encoding. Gunakan file di bawah 700 KB atau gunakan Link Drive/PDF."));
         } else {
           resolve(result);
         }
@@ -222,7 +374,8 @@ function applyPageBackground(url) {
   if (url) {
     pageBgImage.style.backgroundImage = `url("${url}")`;
     pageBgImage.classList.add("has-image");
-    if (isAdmin) btnResetBg.classList.remove("hidden");
+    if (isLoggedIn && isEditMode) btnResetBg.classList.remove("hidden");
+    else btnResetBg.classList.add("hidden");
   } else {
     pageBgImage.style.backgroundImage = "none";
     pageBgImage.classList.remove("has-image");
@@ -272,7 +425,6 @@ async function loadAllData() {
   renderAll();
 }
 
-// Perbarui href tautan kontak berdasarkan teks yang diedit
 function updateSocialHrefs() {
   const waText = portfolioData.texts.valWa || "";
   const waClean = waText.replace(/[^0-9]/g, "");
@@ -289,8 +441,51 @@ function updateSocialHrefs() {
     : `https://tiktok.com/${ttText.replace(/^@/, "@")}`;
 }
 
-// Render Tampilan
+// Sinkronkan Tampilan Kontrol Admin & Mode Edit
+function syncAdminUI() {
+  const canEdit = isLoggedIn && isEditMode;
+
+  if (isLoggedIn) {
+    adminToolbar.classList.remove("hidden");
+    sidebarUploadBox.classList.remove("hidden");
+    btnAuthModal.textContent = "Admin ✓";
+  } else {
+    adminToolbar.classList.add("hidden");
+    sidebarUploadBox.classList.add("hidden");
+    btnAuthModal.textContent = "Admin";
+  }
+
+  // Tombol Toggle Mode Edit
+  if (canEdit) {
+    btnToggleEdit.textContent = "✅ Selesai Edit (Tutup Mode Edit)";
+    btnToggleEdit.classList.add("active");
+    adminStatusDot.classList.add("editing");
+    adminStatusText.innerHTML = "<strong>Mode Edit Aktif</strong> — Klik teks/foto untuk mengubah";
+    editOnlyControls.classList.remove("hidden");
+    btnSaveAll.classList.remove("hidden");
+    avatarHoverOverlay.classList.remove("hidden");
+    document.getElementById("btn-edit-banner").classList.remove("hidden");
+    avatarContainer.classList.add("admin-clickable");
+    avatarContainer.title = "Klik untuk mengganti foto profil (Maks 1MB)";
+  } else {
+    btnToggleEdit.textContent = "✏️ Aktifkan Mode Edit";
+    btnToggleEdit.classList.remove("active");
+    adminStatusDot.classList.remove("editing");
+    adminStatusText.innerHTML = "<strong>Akun Admin</strong> (Mode Pratinjau)";
+    editOnlyControls.classList.add("hidden");
+    btnSaveAll.classList.add("hidden");
+    avatarHoverOverlay.classList.add("hidden");
+    document.getElementById("btn-edit-banner").classList.add("hidden");
+    avatarContainer.classList.remove("admin-clickable");
+    avatarContainer.title = "Foto Profil";
+  }
+
+  renderAll();
+}
+
+// Render Seluruh Halaman
 function renderAll() {
+  const canEdit = isLoggedIn && isEditMode;
   applyPageBackground(portfolioData.pageBgUrl);
 
   document.getElementById("banner-img").src = portfolioData.bannerUrl;
@@ -301,7 +496,7 @@ function renderAll() {
     if (portfolioData.texts[field] !== undefined) {
       el.textContent = portfolioData.texts[field];
     }
-    el.contentEditable = isAdmin ? "true" : "false";
+    el.contentEditable = canEdit ? "true" : "false";
   });
 
   updateSocialHrefs();
@@ -310,21 +505,35 @@ function renderAll() {
   const taskGrid = document.getElementById("task-grid");
   taskGrid.innerHTML = "";
   taskList.forEach((task) => {
+    const media = parseMediaEmbed(task);
     const isImage = task.fileData && task.fileData.startsWith("data:image/");
+
     const card = document.createElement("div");
     card.className = "card glass-card interactive-card";
     card.dataset.id = task.id;
     card.innerHTML = `
-      ${isAdmin ? `<button class="btn-delete-card" data-id="${task.id}">Hapus</button>` : ""}
+      ${isLoggedIn ? `<button class="btn-delete-card" data-id="${task.id}">Hapus</button>` : ""}
+      <span class="platform-badge">${media.platform}</span>
       ${isImage ? `<img src="${task.fileData}" alt="${task.title}" class="task-preview-img" />` : ""}
-      <h3 class="task-title" contenteditable="${isAdmin}">${task.title}</h3>
-      <p class="task-desc" contenteditable="${isAdmin}">${task.desc}</p>
-      ${task.fileData ? `<a href="${task.fileData}" download="${task.fileName || "tugas"}" class="task-file-link">⬇️ Unduh (${task.fileName || "File"})</a>` : ""}
+      <h3 class="task-title" contenteditable="${canEdit}">${task.title}</h3>
+      <p class="task-desc" contenteditable="${canEdit}">${task.desc}</p>
+      <div class="task-card-actions">
+        <button type="button" class="btn-view-task ripple-btn">👁️ Lihat Tugas</button>
+        ${task.fileData ? `<a href="${task.fileData}" download="${task.fileName || "tugas"}" class="task-file-link">⬇️ Unduh</a>` : ""}
+      </div>
     `;
+
+    // Klik tombol Lihat Tugas atau gambar pratinjau untuk melihat langsung di web
+    card.querySelector(".btn-view-task").addEventListener("click", () => openTaskPreview(task));
+    const previewImg = card.querySelector(".task-preview-img");
+    if (previewImg) {
+      previewImg.addEventListener("click", () => openTaskPreview(task));
+    }
+
     taskGrid.appendChild(card);
   });
 
-  if (isAdmin) {
+  if (isLoggedIn) {
     document.querySelectorAll("#task-grid .btn-delete-card").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const id = e.target.dataset.id;
@@ -342,10 +551,10 @@ function renderAll() {
   }
 }
 
-// Cegah kartu sosial media membuka link baru saat Admin sedang mengedit teks di dalamnya
+// Cegah kartu sosial media membuka link baru hanya ketika Mode Edit aktif
 document.querySelectorAll(".social-card").forEach((card) => {
   card.addEventListener("click", (e) => {
-    if (isAdmin) {
+    if (isLoggedIn && isEditMode) {
       e.preventDefault();
     }
   });
@@ -353,34 +562,24 @@ document.querySelectorAll(".social-card").forEach((card) => {
 
 // Pantau Status Login Admin
 onAuthStateChanged(auth, (user) => {
-  isAdmin = !!user;
-  const adminElements = [
-    adminToolbar,
-    sidebarUploadBox,
-    avatarHoverOverlay,
-    document.getElementById("btn-edit-banner")
-  ];
-
-  adminElements.forEach((el) => {
-    if (isAdmin) el.classList.remove("hidden");
-    else el.classList.add("hidden");
-  });
-
-  if (isAdmin) {
-    avatarContainer.classList.add("admin-clickable");
-    avatarContainer.title = "Klik untuk mengganti foto profil (Maks 1MB)";
-  } else {
-    avatarContainer.classList.remove("admin-clickable");
-    avatarContainer.title = "Foto Profil";
+  isLoggedIn = !!user;
+  if (!isLoggedIn) {
+    isEditMode = false;
   }
-
-  btnAuthModal.textContent = isAdmin ? "Admin ✓" : "Admin";
-  renderAll();
+  syncAdminUI();
 });
 
-// Klik langsung area foto profil saat mode Admin aktif
+// Toggle Mode Edit secara bebas saat berada di akun Admin
+btnToggleEdit.addEventListener("click", () => {
+  if (!isLoggedIn) return;
+  isEditMode = !isEditMode;
+  syncAdminUI();
+  showToast(isEditMode ? "Mode Edit diaktifkan." : "Kembali ke Mode Pratinjau.");
+});
+
+// Klik langsung area foto profil saat Mode Edit aktif
 avatarContainer.addEventListener("click", () => {
-  if (isAdmin) {
+  if (isLoggedIn && isEditMode) {
     inputAvatarFile.click();
   }
 });
@@ -388,7 +587,7 @@ avatarContainer.addEventListener("click", () => {
 // Upload Foto Profil (Maks 1MB)
 inputAvatarFile.addEventListener("change", async (e) => {
   const file = e.target.files[0];
-  if (!file || !isAdmin) return;
+  if (!file || !(isLoggedIn && isEditMode)) return;
   try {
     showToast("Memproses foto profil...");
     const base64 = await fileToBase64(file, 500);
@@ -405,7 +604,7 @@ inputAvatarFile.addEventListener("change", async (e) => {
 // Upload Banner (Maks 1MB)
 document.getElementById("input-banner-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
-  if (!file || !isAdmin) return;
+  if (!file || !(isLoggedIn && isEditMode)) return;
   try {
     showToast("Memproses banner...");
     const base64 = await fileToBase64(file, 1280);
@@ -419,10 +618,10 @@ document.getElementById("input-banner-file").addEventListener("change", async (e
   e.target.value = "";
 });
 
-// Upload Background Halaman dengan Foto/Gambar (Maks 1MB)
+// Upload Background Halaman (Maks 1MB)
 inputPageBg.addEventListener("change", async (e) => {
   const file = e.target.files[0];
-  if (!file || !isAdmin) return;
+  if (!file || !(isLoggedIn && isEditMode)) return;
   try {
     showToast("Memproses gambar background...");
     const base64 = await fileToBase64(file, 1440);
@@ -438,7 +637,7 @@ inputPageBg.addEventListener("change", async (e) => {
 
 // Reset Gambar Background Halaman
 btnResetBg.addEventListener("click", async () => {
-  if (!isAdmin) return;
+  if (!(isLoggedIn && isEditMode)) return;
   try {
     await deleteDoc(pageBgDocRef);
     portfolioData.pageBgUrl = "";
@@ -451,7 +650,7 @@ btnResetBg.addEventListener("click", async () => {
 
 // Modal Login & Auth
 btnAuthModal.addEventListener("click", () => {
-  if (!isAdmin) {
+  if (!isLoggedIn) {
     loginError.textContent = "";
     loginModal.classList.remove("hidden");
   }
@@ -469,7 +668,7 @@ loginForm.addEventListener("submit", async (e) => {
     );
     loginModal.classList.add("hidden");
     loginForm.reset();
-    showToast("Login berhasil! Mode Edit aktif.");
+    showToast("Berhasil masuk ke akun Admin.");
   } catch (err) {
     loginError.textContent = "Email atau password salah!";
   }
@@ -480,16 +679,16 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
   showToast("Berhasil keluar dari akun Admin.");
 });
 
-// Upload Tugas dari Sidebar (Maks 1MB)
+// Upload Tugas dari Sidebar (Mendukung Link TikTok/IG/YT/Drive/PDF atau File Lokal <= 1MB)
 const taskFileInput = document.getElementById("task-file-input");
 taskFileInput.addEventListener("change", () => {
   const file = taskFileInput.files[0];
   if (!file) {
-    document.getElementById("task-file-name").textContent = "Belum ada file dipilih (Maks 1MB)";
+    document.getElementById("task-file-name").textContent = "Belum ada file dipilih";
     return;
   }
   if (file.size > MAX_FILE_SIZE) {
-    showToast("Ukuran file melebihi 1 MB!", true);
+    showToast("Ukuran file melebihi 1 MB! Gunakan link Drive/YouTube atau file <= 1MB.", true);
     taskFileInput.value = "";
     document.getElementById("task-file-name").textContent = "File ditolak (> 1MB)";
     return;
@@ -498,9 +697,10 @@ taskFileInput.addEventListener("change", () => {
 });
 
 document.getElementById("btn-upload-task").addEventListener("click", async () => {
-  if (!isAdmin) return;
+  if (!isLoggedIn) return;
   const title = document.getElementById("task-title-input").value.trim();
   const desc = document.getElementById("task-desc-input").value.trim();
+  const externalUrl = document.getElementById("task-link-input").value.trim();
   const file = taskFileInput.files[0];
 
   if (!title) {
@@ -520,6 +720,7 @@ document.getElementById("btn-upload-task").addEventListener("click", async () =>
     const newTask = {
       title,
       desc: desc || "Tidak ada deskripsi.",
+      externalUrl,
       fileData,
       fileName,
       createdAt: Date.now()
@@ -530,11 +731,12 @@ document.getElementById("btn-upload-task").addEventListener("click", async () =>
 
     document.getElementById("task-title-input").value = "";
     document.getElementById("task-desc-input").value = "";
+    document.getElementById("task-link-input").value = "";
     taskFileInput.value = "";
-    document.getElementById("task-file-name").textContent = "Belum ada file dipilih (Maks 1MB)";
+    document.getElementById("task-file-name").textContent = "Belum ada file dipilih";
 
     renderAll();
-    showToast("Tugas berhasil diunggah!");
+    showToast("Tugas berhasil ditambahkan dan dapat langsung dilihat!");
   } catch (err) {
     showToast("Gagal mengunggah tugas: " + err.message, true);
   }
@@ -542,7 +744,7 @@ document.getElementById("btn-upload-task").addEventListener("click", async () =>
 
 // Simpan Semua Perubahan Teks
 document.getElementById("btn-save-all").addEventListener("click", async () => {
-  if (!isAdmin) return;
+  if (!(isLoggedIn && isEditMode)) return;
 
   document.querySelectorAll(".editable").forEach((el) => {
     portfolioData.texts[el.dataset.field] = el.textContent.trim();

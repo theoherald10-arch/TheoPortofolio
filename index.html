@@ -18,19 +18,27 @@
   <!-- Toast Notification -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Bilah Kontrol Admin -->
+  <!-- Bilah Kontrol Admin (Muncul saat login, Mode Edit bisa di-toggle bebas) -->
   <div id="admin-toolbar" class="admin-toolbar glass-panel hidden">
     <div class="admin-info">
-      <span class="pulse-dot"></span>
-      <span><strong>Mode Edit Aktif</strong> — Klik teks, foto profil, atau banner untuk mengubah</span>
-      <label class="bg-upload-btn ripple-btn" title="Unggah Gambar Latar Belakang (Maks 1MB)">
-        🖼️ Ubah Background
-        <input type="file" id="input-page-bg" accept="image/*" hidden />
-      </label>
-      <button id="btn-reset-bg" class="btn-mini-glass hidden" title="Hapus Gambar Background">Reset BG</button>
+      <span id="admin-status-dot" class="pulse-dot"></span>
+      <span id="admin-status-text"><strong>Akun Admin</strong> (Mode Pratinjau)</span>
+
+      <!-- Tombol Bebas Toggle Mode Edit -->
+      <button id="btn-toggle-edit" class="btn-toggle-edit ripple-btn">✏️ Aktifkan Mode Edit</button>
+
+      <!-- Kontrol Ubah Background (Hanya muncul saat Mode Edit aktif) -->
+      <div id="edit-only-controls" class="edit-only-controls hidden">
+        <label class="bg-upload-btn ripple-btn" title="Unggah Gambar Latar Belakang (Maks 1MB)">
+          🖼️ Ubah Background
+          <input type="file" id="input-page-bg" accept="image/*" hidden />
+        </label>
+        <button id="btn-reset-bg" class="btn-mini-glass hidden" title="Hapus Gambar Background">Reset BG</button>
+      </div>
     </div>
+
     <div class="admin-actions">
-      <button id="btn-save-all" class="btn-small primary ripple-btn">💾 Simpan Semua</button>
+      <button id="btn-save-all" class="btn-small primary ripple-btn hidden">💾 Simpan Semua</button>
       <button id="btn-logout" class="btn-small danger ripple-btn">Logout</button>
     </div>
   </div>
@@ -61,16 +69,22 @@
         </a>
       </nav>
 
-      <!-- Kotak Upload Tugas di Sidebar (Khusus Admin) -->
+      <!-- Kotak Upload Tugas di Sidebar (Tampil untuk Admin agar bebas upload kapan saja) -->
       <div id="sidebar-upload-box" class="sidebar-upload glass-card hidden">
         <h4 class="editable" data-field="sidebarUploadTitle">Upload Tugas Baru</h4>
         <input type="text" id="task-title-input" placeholder="Judul Tugas..." />
         <textarea id="task-desc-input" rows="2" placeholder="Deskripsi singkat tugas..."></textarea>
+
+        <!-- Pilihan Sumber Tugas: Link Sosmed/Drive/PDF atau File Lokal -->
+        <input type="url" id="task-link-input" placeholder="Tempel Link (TikTok, IG, YT, Drive, PDF)..." />
+
+        <div class="upload-divider"><span>atau unggah file (Maks 1MB)</span></div>
+
         <label class="file-label">
-          <span>📎 Pilih File / Gambar (Maks 1MB)</span>
+          <span>📎 Pilih File / Gambar / PDF</span>
           <input type="file" id="task-file-input" />
         </label>
-        <span id="task-file-name" class="file-name-hint">Belum ada file dipilih (Maks 1MB)</span>
+        <span id="task-file-name" class="file-name-hint">Belum ada file dipilih</span>
         <button id="btn-upload-task" class="btn full-width ripple-btn">+ Tambah Tugas</button>
       </div>
     </aside>
@@ -100,7 +114,7 @@
           <div class="profile-intro glass-card">
             <h1 class="editable" data-field="profileName">Theo</h1>
             <p class="subtitle editable" data-field="profileRole">Web Developer &amp; UI/UX Enthusiast</p>
-            <p class="bio editable" data-field="profileBio">Selamat datang di portofolio saya. Klik tombol Admin di sidebar untuk mengubah foto profil, banner, dan seluruh teks di halaman ini.</p>
+            <p class="bio editable" data-field="profileBio">Selamat datang di portofolio saya. Klik tombol Admin di sidebar untuk masuk dan mengatur konten portofolio ini.</p>
           </div>
         </div>
       </section>
@@ -136,7 +150,7 @@
         </div>
       </section>
 
-      <!-- BAGIAN 3: SKILL (KOLOM SKILL + DESKRIPSI DI BAWAHNYA) -->
+      <!-- BAGIAN 3: SKILL -->
       <section id="bagian-skill" class="container section reveal-section">
         <h2 class="editable" data-field="headingSkill">Keahlian (Skill)</h2>
         <div class="skill-columns-grid">
@@ -159,16 +173,16 @@
         </div>
       </section>
 
-      <!-- BAGIAN 4B: TAMPILAN TUGAS YANG DIUPLOAD -->
+      <!-- BAGIAN 4B: TAMPILAN TUGAS YANG DIUPLOAD (BISA DILIHAT LANGSUNG DI WEB) -->
       <section id="bagian-tugas" class="container section reveal-section">
         <h2 class="editable" data-field="headingTugas">Koleksi Tugas &amp; Karya</h2>
-        <p class="section-desc editable" data-field="descTugas">Kumpulan file tugas dan proyek yang diunggah melalui panel sidebar.</p>
+        <p class="section-desc editable" data-field="descTugas">Klik tombol "Lihat Tugas" pada kartu untuk menampilkan pratinjau video, PDF, Drive, atau gambar langsung di halaman ini.</p>
         <div id="task-grid" class="grid">
           <!-- Daftar tugas dimuat dari Firestore -->
         </div>
       </section>
 
-      <!-- BAGIAN 5: NOMOR WA, YOUTUBE & TIKTOK (EDIT LANGSUNG DI KARTU) -->
+      <!-- BAGIAN 5: NOMOR WA, YOUTUBE & TIKTOK -->
       <section id="bagian-kontak" class="container section reveal-section">
         <h2 class="editable" data-field="headingKontak">Kontak &amp; Media Sosial</h2>
         <p class="section-desc editable" data-field="descKontak">Hubungi saya langsung melalui WhatsApp atau ikuti kanal media sosial saya:</p>
@@ -193,6 +207,26 @@
         <p class="editable" data-field="footerText">&copy; 2026 Theo. Dibuat dengan VS Code, GitHub &amp; Firebase.</p>
       </footer>
     </main>
+  </div>
+
+  <!-- Modal Pratinjau Tugas Langsung di Web (YouTube, TikTok, IG, Drive, PDF, Gambar) -->
+  <div id="preview-modal" class="modal hidden">
+    <div class="preview-modal-content glass-panel">
+      <div class="preview-header">
+        <div>
+          <span id="preview-badge" class="platform-badge">TUGAS</span>
+          <h3 id="preview-title">Judul Tugas</h3>
+        </div>
+        <div class="preview-header-actions">
+          <a id="preview-external-btn" href="#" target="_blank" class="btn-small ripple-btn">Buka Tab Baru ↗</a>
+          <button id="btn-close-preview" class="btn-small danger ripple-btn">✕ Tutup</button>
+        </div>
+      </div>
+      <p id="preview-desc" class="preview-desc"></p>
+      <div id="preview-body" class="preview-body">
+        <!-- Konten embed/iframe/gambar/PDF dimuat secara dinamis -->
+      </div>
+    </div>
   </div>
 
   <!-- Modal Login Admin -->
