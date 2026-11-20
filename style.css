@@ -1,9 +1,9 @@
 :root {
   --bg: #1e1b2e;
-  --glass-bg: rgba(255, 255, 255, 0.07);
-  --glass-bg-hover: rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.16);
-  --glass-highlight: rgba(255, 255, 255, 0.28);
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-hover: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.3);
   --text: #f8fafc;
   --muted: #cbd5e1;
   --accent: #a5b4fc;
@@ -25,7 +25,29 @@ body {
   color: var(--text);
   line-height: 1.65;
   overflow-x: hidden;
-  transition: background-color 0.35s ease;
+}
+
+/* Lapisan Gambar Background Halaman */
+.page-bg-image {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.page-bg-image.has-image {
+  opacity: 1;
+}
+
+.page-bg-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 14, 26, 0.58);
 }
 
 /* Ornamen Latar Belakang Mengambang (Soft Ambient Orbs) */
@@ -41,7 +63,7 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(90px);
-  opacity: 0.45;
+  opacity: 0.42;
   animation: floatOrb 16s ease-in-out infinite alternate;
 }
 
@@ -78,7 +100,7 @@ body {
 
 /* Komponen Dasar Soft Glass */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(20, 18, 34, 0.58);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
@@ -87,21 +109,21 @@ body {
 
 .glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   border-radius: 16px;
 }
 
 .glass-pill {
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(15, 23, 42, 0.58);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-highlight);
 }
 
-/* Microinteraction: Interactive Card Hover & Spotlight */
+/* Microinteraction: Interactive Card Hover */
 .interactive-card {
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
               background-color 0.28s ease,
@@ -160,7 +182,7 @@ body {
 }
 
 .toast {
-  background: rgba(30, 27, 46, 0.85);
+  background: rgba(30, 27, 46, 0.88);
   backdrop-filter: blur(16px);
   border: 1px solid var(--glass-highlight);
   color: var(--text);
@@ -219,15 +241,37 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-.bg-picker-label {
+.bg-upload-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 3px 10px;
+  background: rgba(165, 180, 252, 0.16);
+  color: var(--text);
+  padding: 5px 12px;
   border-radius: 8px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.bg-upload-btn:hover {
+  background: rgba(165, 180, 252, 0.28);
+}
+
+.btn-mini-glass {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  border: 1px solid var(--glass-border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-mini-glass:hover {
+  color: var(--text);
+  border-color: var(--danger);
 }
 
 .admin-actions {
@@ -332,7 +376,6 @@ body {
   background: rgba(15, 23, 42, 0.45);
   color: var(--text);
   font-size: 0.85rem;
-  transition: border-color 0.2s ease;
 }
 
 .sidebar-upload input[type="text"]:focus,
@@ -351,7 +394,6 @@ body {
   border-radius: 10px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
 .file-label:hover {
@@ -379,7 +421,7 @@ body {
   padding: 0 24px;
 }
 
-/* Scroll Reveal Microinteraction */
+/* Scroll Reveal */
 .reveal-section {
   opacity: 0;
   transform: translateY(18px);
@@ -426,12 +468,6 @@ body {
   font-size: 0.82rem;
   cursor: pointer;
   font-weight: 600;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.edit-media-btn:hover {
-  transform: scale(1.04);
-  background: rgba(255, 255, 255, 0.18);
 }
 
 .banner-btn {
@@ -451,7 +487,6 @@ body {
   flex-wrap: wrap;
 }
 
-/* Foto Profil dengan Interaksi Ganti Foto yang Intuitif */
 .avatar-wrapper {
   position: relative;
   width: 132px;
@@ -478,7 +513,6 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 0.25s ease;
 }
 
 .avatar-wrapper.admin-clickable:hover img {
@@ -541,17 +575,6 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-.section-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.section-header-row h2 {
-  margin-bottom: 0;
-}
-
 .section-desc {
   color: var(--muted);
   margin-bottom: 20px;
@@ -582,44 +605,27 @@ body {
   font-size: 0.98rem;
 }
 
-/* Bagian 3: Skill Pills */
-.skill-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+/* Bagian 3: Kolom Skill & Deskripsi */
+.skill-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
 
-.skill-badge {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  color: var(--text);
-  padding: 9px 16px;
-  border-radius: 999px;
+.skill-card {
+  padding: 20px;
+}
+
+.skill-card h3 {
+  font-size: 1.08rem;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.skill-card p {
+  color: var(--muted);
   font-size: 0.9rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 0.22s ease,
-              box-shadow 0.22s ease;
-}
-
-.skill-badge:hover {
-  transform: translateY(-3px) scale(1.03);
-  border-color: var(--accent);
-  box-shadow: 0 6px 20px var(--accent-glow);
-}
-
-.btn-del-mini {
-  background: var(--danger);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 0.72rem;
-  cursor: pointer;
+  line-height: 1.55;
 }
 
 /* Bagian 4B: Grid Tugas */
@@ -667,7 +673,6 @@ body {
   border: 1px solid var(--glass-border);
   padding: 6px 14px;
   border-radius: 999px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .task-file-link:hover {
@@ -714,29 +719,6 @@ body {
   color: var(--muted);
   font-size: 0.88rem;
   word-break: break-all;
-}
-
-.edit-box {
-  margin-top: 22px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 480px;
-}
-
-.edit-box label {
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.edit-box input {
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  background: rgba(15, 23, 42, 0.45);
-  color: var(--text);
-  margin-bottom: 6px;
 }
 
 /* Buttons & Editable State */
@@ -796,6 +778,7 @@ body {
   padding: 2px 6px;
   border-radius: 6px;
   background: rgba(165, 180, 252, 0.12);
+  cursor: text;
 }
 
 [contenteditable="true"]:focus {

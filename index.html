@@ -7,14 +7,15 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Ornamen Cahaya Latar Belakang untuk Efek Soft Glass -->
+  <!-- Lapisan Gambar Background Halaman + Ornamen Soft Glass -->
+  <div id="page-bg-image" class="page-bg-image" aria-hidden="true"></div>
   <div class="ambient-bg" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
   </div>
 
-  <!-- Toast Notification (Pengganti alert() untuk microinteraction halus) -->
+  <!-- Toast Notification -->
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Bilah Kontrol Admin -->
@@ -22,9 +23,11 @@
     <div class="admin-info">
       <span class="pulse-dot"></span>
       <span><strong>Mode Edit Aktif</strong> — Klik teks, foto profil, atau banner untuk mengubah</span>
-      <label class="bg-picker-label" title="Ubah Warna Dasar Latar Belakang">
-        Tint BG: <input type="color" id="bg-color-picker" value="#1e1b2e" />
+      <label class="bg-upload-btn ripple-btn" title="Unggah Gambar Latar Belakang (Maks 1MB)">
+        🖼️ Ubah Background
+        <input type="file" id="input-page-bg" accept="image/*" hidden />
       </label>
+      <button id="btn-reset-bg" class="btn-mini-glass hidden" title="Hapus Gambar Background">Reset BG</button>
     </div>
     <div class="admin-actions">
       <button id="btn-save-all" class="btn-small primary ripple-btn">💾 Simpan Semua</button>
@@ -86,7 +89,6 @@
         </div>
 
         <div class="profile-header container">
-          <!-- Klik langsung pada foto profil saat mode admin aktif untuk mengganti foto -->
           <div id="avatar-container" class="avatar-wrapper" title="Foto Profil">
             <img id="avatar-img" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80" alt="Foto Profil" />
             <div id="avatar-hover-overlay" class="avatar-hover-overlay hidden">
@@ -134,14 +136,26 @@
         </div>
       </section>
 
-      <!-- BAGIAN 3: SKILL -->
+      <!-- BAGIAN 3: SKILL (KOLOM SKILL + DESKRIPSI DI BAWAHNYA) -->
       <section id="bagian-skill" class="container section reveal-section">
-        <div class="section-header-row">
-          <h2 class="editable" data-field="headingSkill">Keahlian (Skill)</h2>
-          <button id="btn-add-skill" class="btn-small ripple-btn hidden">+ Tambah Skill</button>
-        </div>
-        <div id="skill-list" class="skill-grid">
-          <!-- Daftar skill dimuat dari Firestore -->
+        <h2 class="editable" data-field="headingSkill">Keahlian (Skill)</h2>
+        <div class="skill-columns-grid">
+          <div class="skill-card glass-card interactive-card">
+            <h3 class="editable" data-field="skillTitle1">Web Development</h3>
+            <p class="editable" data-field="skillDesc1">Membangun antarmuka website responsif dan interaktif menggunakan HTML5, CSS3, dan JavaScript modern.</p>
+          </div>
+          <div class="skill-card glass-card interactive-card">
+            <h3 class="editable" data-field="skillTitle2">Firebase &amp; Cloud</h3>
+            <p class="editable" data-field="skillDesc2">Mengelola autentikasi pengguna, database real-time Firestore, serta deployment aplikasi web.</p>
+          </div>
+          <div class="skill-card glass-card interactive-card">
+            <h3 class="editable" data-field="skillTitle3">UI/UX Design</h3>
+            <p class="editable" data-field="skillDesc3">Merancang tata letak antarmuka yang bersih, nyaman digunakan, dan estetis di berbagai ukuran layar.</p>
+          </div>
+          <div class="skill-card glass-card interactive-card">
+            <h3 class="editable" data-field="skillTitle4">Git &amp; GitHub</h3>
+            <p class="editable" data-field="skillDesc4">Mengatur manajemen versi kode sumber serta kolaborasi proyek secara terstruktur dan aman.</p>
+          </div>
         </div>
       </section>
 
@@ -154,35 +168,24 @@
         </div>
       </section>
 
-      <!-- BAGIAN 5: NOMOR WA, YOUTUBE & TIKTOK -->
+      <!-- BAGIAN 5: NOMOR WA, YOUTUBE & TIKTOK (EDIT LANGSUNG DI KARTU) -->
       <section id="bagian-kontak" class="container section reveal-section">
         <h2 class="editable" data-field="headingKontak">Kontak &amp; Media Sosial</h2>
         <p class="section-desc editable" data-field="descKontak">Hubungi saya langsung melalui WhatsApp atau ikuti kanal media sosial saya:</p>
 
         <div class="social-cards">
           <a id="link-wa" href="https://wa.me/6281234567890" target="_blank" class="social-card glass-card interactive-card">
-            <strong>WhatsApp</strong>
-            <span id="display-wa">+62 812-3456-7890</span>
+            <strong class="editable" data-field="lblWa">WhatsApp</strong>
+            <span id="display-wa" class="editable" data-field="valWa">+62 812-3456-7890</span>
           </a>
           <a id="link-yt" href="https://youtube.com/@username" target="_blank" class="social-card glass-card interactive-card">
-            <strong>YouTube</strong>
-            <span id="display-yt">@username</span>
+            <strong class="editable" data-field="lblYt">YouTube</strong>
+            <span id="display-yt" class="editable" data-field="valYt">https://youtube.com/@username</span>
           </a>
           <a id="link-tt" href="https://tiktok.com/@username" target="_blank" class="social-card glass-card interactive-card">
-            <strong>TikTok</strong>
-            <span id="display-tt">@username</span>
+            <strong class="editable" data-field="lblTt">TikTok</strong>
+            <span id="display-tt" class="editable" data-field="valTt">https://tiktok.com/@username</span>
           </a>
-        </div>
-
-        <!-- Form Edit Nomor WA, YouTube & TikTok (Khusus Admin) -->
-        <div id="social-edit-box" class="edit-box glass-card hidden">
-          <h4>Edit Kontak &amp; Sosial Media:</h4>
-          <label>Nomor WhatsApp (awalan 62, contoh: 6281234567890)</label>
-          <input type="text" id="input-wa" placeholder="6281234567890" />
-          <label>Username / Link YouTube</label>
-          <input type="text" id="input-yt" placeholder="https://youtube.com/@username" />
-          <label>Username / Link TikTok</label>
-          <input type="text" id="input-tt" placeholder="https://tiktok.com/@username" />
         </div>
       </section>
 

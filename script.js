@@ -13,10 +13,10 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   collection,
   getDocs,
   addDoc,
-  deleteDoc,
   updateDoc,
   query,
   orderBy
@@ -37,18 +37,19 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Sesi login tetap aktif sampai Logout ditekan
+// Sesi login tetap bertahan sampai tombol Logout ditekan
 setPersistence(auth, browserLocalPersistence);
 
 const mainDocRef = doc(db, "portofolio", "mainProfile");
 const bannerDocRef = doc(db, "portofolio", "bannerMedia");
 const avatarDocRef = doc(db, "portofolio", "avatarMedia");
+const pageBgDocRef = doc(db, "portofolio", "pageBgMedia");
 const tasksColRef = collection(db, "portofolio_tasks");
 
 const MAX_FILE_SIZE = 1024 * 1024; // 1 MB
 
 let portfolioData = {
-  bgColor: "#1e1b2e",
+  pageBgUrl: "",
   bannerUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80",
   avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
   texts: {
@@ -71,17 +72,25 @@ let portfolioData = {
     lblHobi: "Hobi & Minat",
     valHobi: "Coding, Desain Web, Kopi",
     headingSkill: "Keahlian (Skill)",
+    skillTitle1: "Web Development",
+    skillDesc1: "Membangun antarmuka website responsif dan interaktif menggunakan HTML5, CSS3, dan JavaScript modern.",
+    skillTitle2: "Firebase & Cloud",
+    skillDesc2: "Mengelola autentikasi pengguna, database real-time Firestore, serta deployment aplikasi web.",
+    skillTitle3: "UI/UX Design",
+    skillDesc3: "Merancang tata letak antarmuka yang bersih, nyaman digunakan, dan estetis di berbagai ukuran layar.",
+    skillTitle4: "Git & GitHub",
+    skillDesc4: "Mengatur manajemen versi kode sumber serta kolaborasi proyek secara terstruktur dan aman.",
     headingTugas: "Koleksi Tugas & Karya",
     descTugas: "Kumpulan file tugas dan proyek yang diunggah melalui panel sidebar.",
     headingKontak: "Kontak & Media Sosial",
     descKontak: "Hubungi saya langsung melalui WhatsApp atau ikuti kanal media sosial saya:",
+    lblWa: "WhatsApp",
+    valWa: "+62 812-3456-7890",
+    lblYt: "YouTube",
+    valYt: "https://youtube.com/@username",
+    lblTt: "TikTok",
+    valTt: "https://tiktok.com/@username",
     footerText: "© 2026 Theo. Dibuat dengan VS Code, GitHub & Firebase."
-  },
-  skills: ["HTML5", "CSS3", "JavaScript", "Firebase", "Git & GitHub", "UI/UX Design"],
-  socials: {
-    wa: "6281234567890",
-    yt: "https://youtube.com/@username",
-    tt: "https://tiktok.com/@username"
   }
 };
 
@@ -90,19 +99,20 @@ let isAdmin = false;
 
 // Elemen DOM
 const adminToolbar = document.getElementById("admin-toolbar");
-const bgColorPicker = document.getElementById("bg-color-picker");
+const pageBgImage = document.getElementById("page-bg-image");
+const inputPageBg = document.getElementById("input-page-bg");
+const btnResetBg = document.getElementById("btn-reset-bg");
 const btnAuthModal = document.getElementById("btn-auth-modal");
 const loginModal = document.getElementById("login-modal");
 const btnCloseModal = document.getElementById("btn-close-modal");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const sidebarUploadBox = document.getElementById("sidebar-upload-box");
-const socialEditBox = document.getElementById("social-edit-box");
 const avatarContainer = document.getElementById("avatar-container");
 const avatarHoverOverlay = document.getElementById("avatar-hover-overlay");
 const inputAvatarFile = document.getElementById("input-avatar-file");
 
-// Microinteraction: Toast Notification halus
+// Toast Notification
 function showToast(message, isError = false) {
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
@@ -118,7 +128,7 @@ function showToast(message, isError = false) {
   }, 3000);
 }
 
-// Microinteraction: Efek Ripple saat tombol diklik
+// Efek Ripple saat tombol diklik
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".ripple-btn");
   if (!btn) return;
@@ -133,7 +143,7 @@ document.addEventListener("click", (e) => {
   setTimeout(() => circle.remove(), 550);
 });
 
-// Microinteraction: Scroll Reveal & Active Sidebar Indicator
+// Scroll Reveal & Active Sidebar Indicator
 const revealObserver = new IntersectionObserver(
   (entries) => {
     entries.forEach((entry) => {
@@ -207,13 +217,27 @@ function fileToBase64(file, maxWidth = 1280) {
   });
 }
 
+// Terapkan Gambar Background Halaman
+function applyPageBackground(url) {
+  if (url) {
+    pageBgImage.style.backgroundImage = `url("${url}")`;
+    pageBgImage.classList.add("has-image");
+    if (isAdmin) btnResetBg.classList.remove("hidden");
+  } else {
+    pageBgImage.style.backgroundImage = "none";
+    pageBgImage.classList.remove("has-image");
+    btnResetBg.classList.add("hidden");
+  }
+}
+
 // Muat Semua Data dari Firestore
 async function loadAllData() {
   try {
-    const [mainSnap, bannerSnap, avatarSnap, tasksSnap] = await Promise.all([
+    const [mainSnap, bannerSnap, avatarSnap, bgSnap, tasksSnap] = await Promise.all([
       getDoc(mainDocRef),
       getDoc(bannerDocRef),
       getDoc(avatarDocRef),
+      getDoc(pageBgDocRef),
       getDocs(query(tasksColRef, orderBy("createdAt", "desc")))
     ]);
 
@@ -222,8 +246,7 @@ async function loadAllData() {
       portfolioData = {
         ...portfolioData,
         ...saved,
-        texts: { ...portfolioData.texts, ...(saved.texts || {}) },
-        socials: { ...portfolioData.socials, ...(saved.socials || {}) }
+        texts: { ...portfolioData.texts, ...(saved.texts || {}) }
       };
     }
 
@@ -233,6 +256,10 @@ async function loadAllData() {
 
     if (avatarSnap.exists() && avatarSnap.data().url) {
       portfolioData.avatarUrl = avatarSnap.data().url;
+    }
+
+    if (bgSnap.exists() && bgSnap.data().url) {
+      portfolioData.pageBgUrl = bgSnap.data().url;
     }
 
     taskList = [];
@@ -245,10 +272,26 @@ async function loadAllData() {
   renderAll();
 }
 
+// Perbarui href tautan kontak berdasarkan teks yang diedit
+function updateSocialHrefs() {
+  const waText = portfolioData.texts.valWa || "";
+  const waClean = waText.replace(/[^0-9]/g, "");
+  document.getElementById("link-wa").href = waClean ? `https://wa.me/${waClean}` : "#bagian-kontak";
+
+  const ytText = (portfolioData.texts.valYt || "").trim();
+  document.getElementById("link-yt").href = ytText.startsWith("http")
+    ? ytText
+    : `https://youtube.com/${ytText.replace(/^@/, "@")}`;
+
+  const ttText = (portfolioData.texts.valTt || "").trim();
+  document.getElementById("link-tt").href = ttText.startsWith("http")
+    ? ttText
+    : `https://tiktok.com/${ttText.replace(/^@/, "@")}`;
+}
+
 // Render Tampilan
 function renderAll() {
-  document.documentElement.style.setProperty("--bg", portfolioData.bgColor);
-  bgColorPicker.value = portfolioData.bgColor;
+  applyPageBackground(portfolioData.pageBgUrl);
 
   document.getElementById("banner-img").src = portfolioData.bannerUrl;
   document.getElementById("avatar-img").src = portfolioData.avatarUrl;
@@ -261,27 +304,7 @@ function renderAll() {
     el.contentEditable = isAdmin ? "true" : "false";
   });
 
-  // Render Skill
-  const skillList = document.getElementById("skill-list");
-  skillList.innerHTML = "";
-  portfolioData.skills.forEach((skill, idx) => {
-    const badge = document.createElement("div");
-    badge.className = "skill-badge";
-    badge.innerHTML = `
-      <span class="skill-text" contenteditable="${isAdmin}">${skill}</span>
-      ${isAdmin ? `<button class="btn-del-mini" data-idx="${idx}">×</button>` : ""}
-    `;
-    skillList.appendChild(badge);
-  });
-
-  if (isAdmin) {
-    document.querySelectorAll(".btn-del-mini").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        portfolioData.skills.splice(Number(e.target.dataset.idx), 1);
-        renderAll();
-      });
-    });
-  }
+  updateSocialHrefs();
 
   // Render Daftar Tugas
   const taskGrid = document.getElementById("task-grid");
@@ -317,22 +340,16 @@ function renderAll() {
       });
     });
   }
-
-  // Render Kontak
-  const waClean = portfolioData.socials.wa.replace(/[^0-9]/g, "");
-  document.getElementById("link-wa").href = `https://wa.me/${waClean}`;
-  document.getElementById("display-wa").textContent = `+${waClean}`;
-
-  document.getElementById("link-yt").href = portfolioData.socials.yt;
-  document.getElementById("display-yt").textContent = portfolioData.socials.yt;
-
-  document.getElementById("link-tt").href = portfolioData.socials.tt;
-  document.getElementById("display-tt").textContent = portfolioData.socials.tt;
-
-  document.getElementById("input-wa").value = portfolioData.socials.wa;
-  document.getElementById("input-yt").value = portfolioData.socials.yt;
-  document.getElementById("input-tt").value = portfolioData.socials.tt;
 }
+
+// Cegah kartu sosial media membuka link baru saat Admin sedang mengedit teks di dalamnya
+document.querySelectorAll(".social-card").forEach((card) => {
+  card.addEventListener("click", (e) => {
+    if (isAdmin) {
+      e.preventDefault();
+    }
+  });
+});
 
 // Pantau Status Login Admin
 onAuthStateChanged(auth, (user) => {
@@ -340,10 +357,8 @@ onAuthStateChanged(auth, (user) => {
   const adminElements = [
     adminToolbar,
     sidebarUploadBox,
-    socialEditBox,
     avatarHoverOverlay,
-    document.getElementById("btn-edit-banner"),
-    document.getElementById("btn-add-skill")
+    document.getElementById("btn-edit-banner")
   ];
 
   adminElements.forEach((el) => {
@@ -363,7 +378,7 @@ onAuthStateChanged(auth, (user) => {
   renderAll();
 });
 
-// Klik langsung area foto profil saat mode Admin aktif untuk membuka pemilih gambar
+// Klik langsung area foto profil saat mode Admin aktif
 avatarContainer.addEventListener("click", () => {
   if (isAdmin) {
     inputAvatarFile.click();
@@ -404,6 +419,36 @@ document.getElementById("input-banner-file").addEventListener("change", async (e
   e.target.value = "";
 });
 
+// Upload Background Halaman dengan Foto/Gambar (Maks 1MB)
+inputPageBg.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file || !isAdmin) return;
+  try {
+    showToast("Memproses gambar background...");
+    const base64 = await fileToBase64(file, 1440);
+    await setDoc(pageBgDocRef, { url: base64 });
+    portfolioData.pageBgUrl = base64;
+    applyPageBackground(base64);
+    showToast("Background halaman berhasil diubah!");
+  } catch (err) {
+    showToast(err.message, true);
+  }
+  e.target.value = "";
+});
+
+// Reset Gambar Background Halaman
+btnResetBg.addEventListener("click", async () => {
+  if (!isAdmin) return;
+  try {
+    await deleteDoc(pageBgDocRef);
+    portfolioData.pageBgUrl = "";
+    applyPageBackground("");
+    showToast("Gambar background dihapus.");
+  } catch (err) {
+    showToast("Gagal menghapus background: " + err.message, true);
+  }
+});
+
 // Modal Login & Auth
 btnAuthModal.addEventListener("click", () => {
   if (!isAdmin) {
@@ -433,18 +478,6 @@ loginForm.addEventListener("submit", async (e) => {
 document.getElementById("btn-logout").addEventListener("click", async () => {
   await signOut(auth);
   showToast("Berhasil keluar dari akun Admin.");
-});
-
-bgColorPicker.addEventListener("input", (e) => {
-  portfolioData.bgColor = e.target.value;
-  document.documentElement.style.setProperty("--bg", e.target.value);
-});
-
-// Tambah Skill
-document.getElementById("btn-add-skill").addEventListener("click", () => {
-  portfolioData.skills.push("Skill Baru");
-  renderAll();
-  showToast("Skill ditambahkan. Klik teksnya untuk mengedit.");
 });
 
 // Upload Tugas dari Sidebar (Maks 1MB)
@@ -507,23 +540,13 @@ document.getElementById("btn-upload-task").addEventListener("click", async () =>
   }
 });
 
-// Simpan Perubahan Teks, Skill, & Kontak
+// Simpan Semua Perubahan Teks
 document.getElementById("btn-save-all").addEventListener("click", async () => {
   if (!isAdmin) return;
 
   document.querySelectorAll(".editable").forEach((el) => {
     portfolioData.texts[el.dataset.field] = el.textContent.trim();
   });
-
-  const updatedSkills = [];
-  document.querySelectorAll("#skill-list .skill-text").forEach((el) => {
-    updatedSkills.push(el.textContent.trim());
-  });
-  portfolioData.skills = updatedSkills;
-
-  portfolioData.socials.wa = document.getElementById("input-wa").value.trim();
-  portfolioData.socials.yt = document.getElementById("input-yt").value.trim();
-  portfolioData.socials.tt = document.getElementById("input-tt").value.trim();
 
   const taskCards = document.querySelectorAll("#task-grid .card");
   for (const card of taskCards) {
@@ -539,8 +562,9 @@ document.getElementById("btn-save-all").addEventListener("click", async () => {
   }
 
   try {
-    const { bannerUrl, avatarUrl, ...profileOnlyData } = portfolioData;
+    const { bannerUrl, avatarUrl, pageBgUrl, ...profileOnlyData } = portfolioData;
     await setDoc(mainDocRef, profileOnlyData);
+    updateSocialHrefs();
     showToast("Semua perubahan berhasil disimpan!");
     renderAll();
   } catch (err) {
