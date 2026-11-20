@@ -9,61 +9,82 @@
 <body>
   <header>
     <nav class="container">
-      <a href="#" class="logo">NamaAnda.</a>
+      <a href="#" class="logo editable" data-field="logo">NamaAnda.</a>
       <ul class="nav-links">
         <li><a href="#tentang">Tentang</a></li>
         <li><a href="#proyek">Proyek</a></li>
         <li><a href="#kontak">Kontak</a></li>
+        <li><button id="btn-auth-modal" class="btn-nav">Admin</button></li>
       </ul>
     </nav>
   </header>
 
+  <!-- Panel Kontrol Khusus Admin (Muncul setelah login) -->
+  <div id="admin-toolbar" class="admin-toolbar hidden">
+    <span>Mode Admin Aktif — Klik teks mana saja untuk mengedit</span>
+    <div class="admin-actions">
+      <button id="btn-add-project" class="btn-small">+ Tambah Proyek</button>
+      <button id="btn-save-all" class="btn-small primary">Simpan Perubahan</button>
+      <button id="btn-logout" class="btn-small danger">Logout</button>
+    </div>
+  </div>
+
   <section class="hero container">
-    <h1>Halo, saya <span>Nama Anda</span></h1>
-    <p>Web Developer &amp; UI/UX Enthusiast yang fokus membangun aplikasi web modern, cepat, dan responsif.</p>
+    <h1>Halo, saya <span class="editable" data-field="heroName">Nama Anda</span></h1>
+    <p class="editable" data-field="heroDesc">Web Developer &amp; UI/UX Enthusiast yang fokus membangun aplikasi web modern, cepat, dan responsif.</p>
     <a href="#proyek" class="btn">Lihat Proyek Saya</a>
   </section>
 
   <section id="tentang" class="container section">
     <h2>Tentang Saya</h2>
-    <p>Saya adalah pengembang perangkat lunak dengan pengalaman di HTML, CSS, JavaScript, dan layanan cloud seperti Firebase. Saya senang memecahkan masalah melalui kode yang bersih dan efisien.</p>
+    <p class="editable" data-field="aboutDesc">Saya adalah pengembang perangkat lunak dengan pengalaman di HTML, CSS, JavaScript, dan layanan cloud seperti Firebase. Saya senang memecahkan masalah melalui kode yang bersih dan efisien.</p>
   </section>
 
   <section id="proyek" class="container section">
     <h2>Proyek Pilihan</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>Aplikasi Manajemen Tugas</h3>
-        <p>Aplikasi web untuk mencatat aktivitas harian dengan sinkronisasi real-time menggunakan Firebase Firestore.</p>
-        <span class="tag">HTML</span> <span class="tag">CSS</span> <span class="tag">Firebase</span>
-      </div>
-      <div class="card">
-        <h3>Website E-Commerce</h3>
-        <p>Antarmuka toko online responsif lengkap dengan fitur keranjang belanja dan filter kategori produk.</p>
-        <span class="tag">JavaScript</span> <span class="tag">CSS Grid</span>
-      </div>
-      <div class="card">
-        <h3>Dashboard Analitik</h3>
-        <p>Visualisasi data penjualan interaktif untuk membantu pelaku UMKM memantau performa bisnis.</p>
-        <span class="tag">Web App</span> <span class="tag">API</span>
-      </div>
+    <div id="project-grid" class="grid">
+      <!-- Daftar proyek akan dimuat otomatis dari Firestore -->
     </div>
   </section>
 
   <section id="kontak" class="container section">
     <h2>Mari Terhubung</h2>
-    <p>Tertarik berkolaborasi atau memiliki pertanyaan? Hubungi saya melalui:</p>
+    <p class="editable" data-field="contactDesc">Tertarik berkolaborasi atau memiliki pertanyaan? Hubungi saya melalui:</p>
     <div class="contact-links">
-      <a href="mailto:emailanda@example.com" class="btn-outline">Email</a>
-      <a href="https://github.com/usernameanda" target="_blank" class="btn-outline">GitHub</a>
-      <a href="https://linkedin.com/in/usernameanda" target="_blank" class="btn-outline">LinkedIn</a>
+      <a id="link-email" href="mailto:emailanda@example.com" class="btn-outline">Email</a>
+      <a id="link-github" href="https://github.com/usernameanda" target="_blank" class="btn-outline">GitHub</a>
+      <a id="link-linkedin" href="https://linkedin.com/in/usernameanda" target="_blank" class="btn-outline">LinkedIn</a>
+    </div>
+    <!-- Form edit link kontak (Hanya muncul saat login) -->
+    <div id="contact-edit-box" class="edit-box hidden">
+      <h4>Edit Tautan Kontak:</h4>
+      <input type="email" id="input-email" placeholder="Email Anda" />
+      <input type="url" id="input-github" placeholder="URL GitHub" />
+      <input type="url" id="input-linkedin" placeholder="URL LinkedIn" />
     </div>
   </section>
 
   <footer>
-    <p>&copy; 2026 Nama Anda. Dibuat dengan VS Code &amp; di-host di Firebase.</p>
+    <p>&copy; 2026 <span class="editable" data-field="footerName">Nama Anda</span>. Dibuat dengan VS Code &amp; Firebase.</p>
   </footer>
 
-  <script src="script.js"></script>
+  <!-- Modal Login Admin -->
+  <div id="login-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Login Admin</h3>
+      <p class="modal-sub">Masukkan email &amp; password untuk mengedit portofolio.</p>
+      <form id="login-form">
+        <input type="email" id="login-email" placeholder="Email Admin" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <p id="login-error" class="error-text"></p>
+        <div class="modal-buttons">
+          <button type="button" id="btn-close-modal" class="btn-outline">Batal</button>
+          <button type="submit" class="btn">Masuk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>

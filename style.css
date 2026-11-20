@@ -4,6 +4,8 @@
   --text: #f8fafc;
   --muted: #94a3b8;
   --accent: #38bdf8;
+  --danger: #ef4444;
+  --success: #22c55e;
 }
 
 * {
@@ -52,7 +54,8 @@ nav {
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 24px;
+  align-items: center;
+  gap: 20px;
 }
 
 .nav-links a {
@@ -65,8 +68,72 @@ nav {
   color: var(--accent);
 }
 
+.btn-nav {
+  background: transparent;
+  border: 1px solid #475569;
+  color: var(--muted);
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-nav:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Admin Toolbar */
+.admin-toolbar {
+  position: sticky;
+  top: 64px;
+  background: #0284c7;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  z-index: 9;
+  font-size: 0.9rem;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-small.primary {
+  background: var(--success);
+  color: #fff;
+}
+
+.btn-small.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Highlight saat elemen bisa diedit */
+[contenteditable="true"] {
+  outline: 1px dashed var(--accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.08);
+}
+
 .hero {
-  padding: 100px 20px 80px;
+  padding: 90px 20px 70px;
 }
 
 .hero h1 {
@@ -94,6 +161,8 @@ nav {
   padding: 12px 24px;
   border-radius: 8px;
   text-decoration: none;
+  border: none;
+  cursor: pointer;
 }
 
 .section {
@@ -117,6 +186,7 @@ nav {
   padding: 24px;
   border-radius: 12px;
   border: 1px solid #334155;
+  position: relative;
 }
 
 .card h3 {
@@ -139,6 +209,19 @@ nav {
   margin-right: 6px;
 }
 
+.btn-delete-card {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
 .contact-links {
   display: flex;
   gap: 12px;
@@ -149,10 +232,85 @@ nav {
 .btn-outline {
   border: 1px solid var(--accent);
   color: var(--accent);
+  background: transparent;
   padding: 10px 20px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 500;
+  cursor: pointer;
+}
+
+.edit-box {
+  margin-top: 24px;
+  background: var(--surface);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 450px;
+}
+
+.edit-box input {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Modal Login */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background: var(--surface);
+  padding: 28px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 380px;
+  border: 1px solid #334155;
+}
+
+.modal-sub {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 6px 0 18px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.hidden {
+  display: none !important;
 }
 
 footer {
